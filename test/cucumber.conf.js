@@ -7,7 +7,9 @@ exports.config = {
   // path relative to the current config file
   frameworkPath: require.resolve('protractor-cucumber-framework'),
   capabilities: {
-    'browserName': 'chrome'
+    'browserName': 'chrome',
+    "handlesAlerts":true,
+    "unexpectedAlertBehaviour": "accept"
   },
   onComplete: function() {
     var reporter = require('cucumber-html-reporter');
@@ -33,9 +35,9 @@ exports.config = {
 
   // Spec patterns are relative to this directory.
   specs: [
-    'features/*.feature'
+    //'features/*.feature'
     //'features/capeTownNegative.feature'
-    //'features/capeTown.feature'
+    'features/capeTown.feature'
   ],
 
   baseURL: 'http://localhost:8080/',
@@ -44,7 +46,6 @@ exports.config = {
     require: [
     'env.js',
     'step_definitions/capeTown.steps.js'],
-    //format  : 'pretty',
     format: 'json:reports/cucumber_report.json',
     resultJsonOutputFile: 'reports/cucumber_report.json'
   }

@@ -10,6 +10,7 @@ var employeePO = function () {
     this.empemail = element(by.model('selectedEmployee.email'))
     this.addEmpButton = element(by.buttonText('Add'));
     this.updateEmpButton = element(by.buttonText('Update'));
+    this.deleteEmpButton = element.all(by.css('p.main-button'));
     this.createButton = element(by.linkText('Create'));
     this.editButton = element(by.linkText('Edit'));
     this.deleteButton = element(by.linkText('Delete'));

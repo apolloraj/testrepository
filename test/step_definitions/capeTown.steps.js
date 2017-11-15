@@ -15,8 +15,10 @@ module.exports = function() {
     this.Then(/^logout of the application$/, logoutApp);
     this.Then(/^Navigate to the screen "([^"]*)"$/,navigatescreen);
     this.Then(/^Add the employee details with "([^"]*)" "([^"]*)" "([^"]*)" and "([^"]*)"$/,createEmployee);
-    this.Then(/^Check the employee details "([^"]*)" "([^"]*)"$/,CheckEmployee);
+    this.Then(/^Check the employee details if exist "([^"]*)" "([^"]*)" "([^"]*)"$/,CheckEmployee);
+    this.Then(/^Select the employee details "([^"]*)" "([^"]*)"$/,selectEmployee);
     this.Then(/^Delete the employee "([^"]*)" "([^"]*)"$/,deleteEmployee);
+    this.Then(/^Delete the employee after selecting "([^"]*)" "([^"]*)"$/,deleteEmployeeAfterSel);
     this.Then(/^Open the employee "([^"]*)" "([^"]*)"$/,editEmployee);
     this.Then(/^Change the employee details with "([^"]*)" "([^"]*)" "([^"]*)" and "([^"]*)"$/,modifyEmployee);
     this.Then(/^check whether the "([^"]*)" and "([^"]*)" is valid$/, checkUservalidation);
@@ -31,14 +33,12 @@ module.exports = function() {
     }
 
     function loginApp(username,password,callback){
-        //var applicationURL = "http://cafetownsend-angular-rails.herokuapp.com/login";
         loginPO.loginusername.sendKeys(username);
         loginPO.loginpassword.sendKeys(password);
         loginPO.loginbutton.click().then(callback);
     }
 
     function navigatescreen(screenname,callback){
-        //var applicationURL = "http://cafetownsend-angular-rails.herokuapp.com/login";
         if (screenname == 'Create'){
             employeePO.createButton.click().then(callback);
         }else if (screenname == 'Modify'){
@@ -49,21 +49,14 @@ module.exports = function() {
     }
 
     function createEmployee(firstname,lastname,startdate,email,callback){
-        //var applicationURL = "http://cafetownsend-angular-rails.herokuapp.com/login";
         employeePO.empFirstName.sendKeys(firstname)
         employeePO.empLastName.sendKeys(lastname)
         employeePO.empstartDate.sendKeys(startdate)
         employeePO.empemail.sendKeys(email)
-        employeePO.addEmpButton.click();
-        //browser.switchTo().alert().accept().then(callback);
-        browser.switchTo().alert().then(
-            function (alert) { alert.accept().then(callback); },
-            function (err) {  callback() }
-        );
+        employeePO.addEmpButton.click().then(callback)
     }
 
     function modifyEmployee(firstname,lastname,startdate,email,callback){
-        //var applicationURL = "http://cafetownsend-angular-rails.herokuapp.com/login";
         employeePO.empFirstName.clear()
         employeePO.empLastName.clear()
         employeePO.empstartDate.clear()
@@ -72,15 +65,10 @@ module.exports = function() {
         employeePO.empLastName.sendKeys(lastname)
         employeePO.empstartDate.sendKeys(startdate)
         employeePO.empemail.sendKeys(email)
-        employeePO.updateEmpButton.click()
-        browser.switchTo().alert().then(
-            function (alert) { alert.accept().then(callback); },
-            function (err) {  callback() }
-        );
+        employeePO.updateEmpButton.click().then(callback);
     }
 
     function logoutApp(callback){
-        //var applicationURL = "http://cafetownsend-angular-rails.herokuapp.com/login";
         loginPO.logoutbutton.getText().then(function(actualTxt){
             if (actualTxt == 'Logout'){
                 loginPO.logoutbutton.click()
@@ -94,42 +82,54 @@ module.exports = function() {
 
     function editEmployee(firstname,lastname,callback){
         var fullemployeename = firstname+' '+lastname;
+        var a = false;
         employeePO.employeelist.getText().then(function(strcount){
             if(strcount.length > 1){
                 for (var j = 0;j < strcount.length; j++){
                     if (fullemployeename == strcount[j]){
                         employeePO.employeelist.get(j).click();
                         employeePO.editButton.click().then(callback);
-                        //var a = true;
-                        break;
-                    }
-                }
-                //if (a){
-                //    callback();
-                //}
-            }
-        })
-    }
-
-    function openEmployee(firstname,lastname,callback){
-        var fullemployeename = firstname+' '+lastname;
-        employeePO.employeelist.getText().then(function(strcount){
-            if(strcount.length > 1){
-                for (var j = 0;j < strcount.length; j++){
-                    if (fullemployeename == strcount[j]){
-                        browser.actions().doubleClick(employeePO.employeelist.get(j)).perform();
                         var a = true;
                         break;
                     }
                 }
-                if (a){
-                    callback();
+                if (!a){
+                    expect(employeePO.employeelist.getText()).to.eventually.equal(fullemployeename,"Expected Employee:"+fullemployeename+" not displayed").and.notify(callback);
                 }
             }
         })
     }
 
-    function CheckEmployee(firstname,lastname,callback){
+    function CheckEmployee(firstname,lastname,mode,callback){
+        var fullemployeename = firstname+' '+lastname;
+        a = false
+        employeePO.employeelist.getText().then(function(strcount){
+            if(strcount.length > 1) {
+                for (var j = 0; j < strcount.length; j++) {
+                    if (fullemployeename == strcount[j]) {
+                        var a = true;
+                        break;
+                    }
+                }
+                if (a) {
+                    if (mode == 'Edit' || mode == 'Add') {
+                        callback();
+                    } else {
+                        expect(employeePO.employeelist.getText()).to.eventually.equal(fullemployeename, "Expected Employee:" + fullemployeename + " is not deleted").and.notify(callback);
+                    }
+                } else {
+                    if (mode == 'Delete') {
+                        callback()
+                    }
+                    else {
+                        expect(employeePO.employeelist.getText()).to.eventually.equal(fullemployeename, "Expected Employee:" + fullemployeename + " not displayed").and.notify(callback);
+                    }
+                }
+            }
+        })
+    }
+
+    function selectEmployee(firstname,lastname,callback){
         var fullemployeename = firstname+' '+lastname;
         employeePO.employeelist.getText().then(function(strcount){
             if(strcount.length > 1){
@@ -141,13 +141,14 @@ module.exports = function() {
                     }
                 }
                 if (a){
-                   callback();
+                    callback();
                 }else{
                     expect(employeePO.employeelist.getText()).to.eventually.equal(fullemployeename,"Expected Employee:"+fullemployeename+" not displayed").and.notify(callback);
                 }
             }
         })
     }
+
 
     function deleteEmployee(firstname,lastname,callback){
         var fullemployeename = firstname+' '+lastname;
@@ -157,7 +158,11 @@ module.exports = function() {
                     if (fullemployeename == strcount[j]){
                         employeePO.employeelist.get(j).click();
                         employeePO.deleteButton.click();
-                        browser.switchTo().alert().accept();
+                        //browser.switchTo().alert().accept();
+                        browser.switchTo().alert().then(
+                            function (alert) { alert.accept(); },
+                            function (err) {   }
+                        );
                         var a = true;
                         break;
                     }
@@ -167,6 +172,14 @@ module.exports = function() {
                 }
             }
         })
+    }
+
+    function deleteEmployeeAfterSel(firstname,lastname,callback){
+        employeePO.deleteEmpButton.get(1).click()
+        browser.switchTo().alert().then(
+            function (alert) { alert.accept().then(callback); },
+            function (err) {  callback() }
+        );
     }
 
     function checkUservalidation(username,password,callback) {
